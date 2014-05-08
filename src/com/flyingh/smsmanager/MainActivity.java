@@ -3,12 +3,14 @@ package com.flyingh.smsmanager;
 import android.annotation.TargetApi;
 import android.app.TabActivity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.LinearLayout;
+import android.widget.TabHost.OnTabChangeListener;
 import android.widget.TabHost.TabSpec;
 import android.widget.TextView;
 
@@ -16,12 +18,28 @@ import com.flyingh.feature.Feature;
 
 @SuppressWarnings("deprecation")
 public class MainActivity extends TabActivity {
+	private static final String CURRENT_TAB = "CURRENT_TAB";
+	private SharedPreferences preferences;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		init();
+		preferences = getPreferences(MODE_PRIVATE);
+		restoreCurrentTab();
+		getTabHost().setOnTabChangedListener(new OnTabChangeListener() {
+
+			@TargetApi(Build.VERSION_CODES.GINGERBREAD)
+			@Override
+			public void onTabChanged(String tabId) {
+				preferences.edit().putInt(CURRENT_TAB, getTabHost().getCurrentTab()).apply();
+			}
+		});
+	}
+
+	private void restoreCurrentTab() {
+		getTabHost().setCurrentTab(preferences.getInt(CURRENT_TAB, 0));
 	}
 
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
