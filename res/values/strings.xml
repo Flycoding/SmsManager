@@ -10,5 +10,10 @@
     <string name="title_activity_conversation">ConversationActivity</string>
     <string name="title_activity_folder">FolderActivity</string>
     <string name="title_activity_group">GroupActivity</string>
+    <string name="new_message">New Message</string>
+    <string name="select_all">Select All</string>
+    <string name="unselect_all">Unselect All</string>
+    <string name="the_conversation_is_empty">The conversation is empty</string>
+    <string name="delete">Delete</string>
 
 </resources>

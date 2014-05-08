@@ -4,13 +4,37 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ListView;
+import android.widget.TextView;
 
 public class ConversationActivity extends ActionBarActivity {
+
+	private ListView listView;
+	private TextView emptyConversationTextView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_conversation);
+		listView = (ListView) findViewById(R.id.listView);
+		emptyConversationTextView = (TextView) findViewById(R.id.emptyConversation);
+		listView.setEmptyView(emptyConversationTextView);
+	}
+
+	public void newMessage(View view) {
+
+	}
+
+	public void selectAll(View view) {
+
+	}
+
+	public void unselectAll(View view) {
+
+	}
+
+	public void delete(View view) {
 
 	}
 
