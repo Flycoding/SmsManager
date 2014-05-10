@@ -15,5 +15,6 @@
     <string name="unselect_all">Unselect All</string>
     <string name="the_conversation_is_empty">The conversation is empty</string>
     <string name="delete">Delete</string>
+    <string name="icon">icon</string>
 
 </resources>
