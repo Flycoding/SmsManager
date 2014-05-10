@@ -7,8 +7,9 @@
     <uses-sdk
         android:minSdkVersion="8"
         android:targetSdkVersion="19" />
-    <uses-permission android:name="android.permission.READ_SMS"/>
-    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <application
         android:allowBackup="true"
@@ -35,6 +36,10 @@
         <activity
             android:name="com.flyingh.smsmanager.GroupActivity"
             android:label="@string/title_activity_group" >
+        </activity>
+        <activity
+            android:name="com.flyingh.smsmanager.ConversationDetailActivity"
+            android:label="@string/title_activity_conversation_detail" >
         </activity>
     </application>
 

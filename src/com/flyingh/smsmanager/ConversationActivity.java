@@ -1,34 +1,42 @@
 package com.flyingh.smsmanager;
 
 import java.util.Date;
+import java.util.HashSet;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.AsyncQueryHandler;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.Telephony.Sms;
-import android.support.v7.app.ActionBarActivity;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CursorAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-public class ConversationActivity extends ActionBarActivity {
+public class ConversationActivity extends Activity {
 
+	private static final String EXTRA_THREAD_ID = "thread_id";
 	private static final int SNIPPET_MAX_LENGTH = 10;
 	private static final String[] PROJECTION = new String[] { "sms.thread_id as _id,sms.address as address,groups.msg_count as msg_count,sms.body as snippet,sms.date as date" };
-	// private static final String COLUMN_ID = "_id";
+	private static final String COLUMN_ID = "_id";
 	private static final String COLUMN_ADDRESS = "address";
 	private static final String COLUMN_MSG_COUNT = "msg_count";
 	private static final String COLUMN_SNIPPET = "snippet";
@@ -36,16 +44,69 @@ public class ConversationActivity extends ActionBarActivity {
 	private ListView listView;
 	private TextView emptyConversationTextView;
 	private CursorAdapter adapter;
+	private MenuItem searchMenuItem;
+	private MenuItem deleteMenuItem;
+	private MenuItem backMenuItem;
+	private DisplayMode mode = DisplayMode.NOT_EDIT;// call setMode method to modify
+	private Button newMsgButton;
+	private Button deleteButton;
+	private LinearLayout selectOptionsLinearLayout;
+	private final HashSet<String> selectedThreadIds = new HashSet<>();
 
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	enum DisplayMode {
+		NOT_EDIT, EDIT;
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_conversation);
-		listView = (ListView) findViewById(R.id.listView);
-		emptyConversationTextView = (TextView) findViewById(R.id.emptyConversation);
+		init();
+		asyncQuery();
+	}
+
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	private void init() {
+		findViews();
 		listView.setEmptyView(emptyConversationTextView);
-		adapter = new CursorAdapter(this, null, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER) {
+		initAdapter();
+		listView.setAdapter(adapter);
+		setItemClickListeners();
+	}
+
+	private void setItemClickListeners() {
+		listView.setOnItemLongClickListener(new OnItemLongClickListener() {
+
+			@Override
+			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+				setMode(DisplayMode.EDIT);
+				Cursor cursor = (Cursor) listView.getItemAtPosition(position);
+				selectOrNot(cursor.getString(cursor.getColumnIndex(COLUMN_ID)));
+				return true;
+			}
+		});
+		listView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				Cursor cursor = (Cursor) listView.getItemAtPosition(position);
+				String threadId = cursor.getString(cursor.getColumnIndex(COLUMN_ID));
+				if (isEdit(mode)) {
+					CheckBox checkBox = (CheckBox) view.findViewById(R.id.checkbox);
+					checkBox.setChecked(!selectedThreadIds.contains(threadId));
+					selectOrNot(threadId);
+				} else {
+					Intent intent = new Intent(ConversationActivity.this, ConversationDetailActivity.class);
+					intent.putExtra(EXTRA_THREAD_ID, threadId);
+					startActivity(intent);
+				}
+			}
+		});
+	}
+
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	private CursorAdapter initAdapter() {
+		return adapter = new CursorAdapter(this, null, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER) {
 
 			private CheckBox checkBox;
 			private ImageView imageView;
@@ -69,7 +130,15 @@ public class ConversationActivity extends ActionBarActivity {
 				if (cursor == null) {
 					return;
 				}
-				checkBox.setSelected(false);
+				checkBox = (CheckBox) view.findViewById(R.id.checkbox);
+				imageView = (ImageView) view.findViewById(R.id.imageView);
+				nameTextView = (TextView) view.findViewById(R.id.nameTextView);
+				snippetTextView = (TextView) view.findViewById(R.id.snippetTextView);
+				dateTextView = (TextView) view.findViewById(R.id.dateTextView);
+				checkBox.setVisibility(isNotEdit(mode) ? View.GONE : View.VISIBLE);
+				String threadId = cursor.getString(cursor.getColumnIndex(COLUMN_ID));
+				checkBox.setChecked(selectedThreadIds.contains(threadId));
+
 				String address = cursor.getString(cursor.getColumnIndex(COLUMN_ADDRESS));
 				Cursor nameCursor = getContentResolver().query(Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, address),
 						new String[] { PhoneLookup.DISPLAY_NAME }, null, null, null);
@@ -91,8 +160,14 @@ public class ConversationActivity extends ActionBarActivity {
 			}
 
 		};
-		listView.setAdapter(adapter);
-		asyncQuery();
+	}
+
+	private void findViews() {
+		listView = (ListView) findViewById(R.id.listView);
+		emptyConversationTextView = (TextView) findViewById(R.id.emptyConversation);
+		newMsgButton = (Button) findViewById(R.id.newMsgButton);
+		deleteButton = (Button) findViewById(R.id.deleteButton);
+		selectOptionsLinearLayout = (LinearLayout) findViewById(R.id.layout_select_options);
 	}
 
 	@TargetApi(Build.VERSION_CODES.KITKAT)
@@ -105,7 +180,7 @@ public class ConversationActivity extends ActionBarActivity {
 		}.startQuery(0, null, Sms.Conversations.CONTENT_URI, PROJECTION, null, null, " date DESC");
 	}
 
-	public void newMessage(View view) {
+	public void newMsg(View view) {
 
 	}
 
@@ -113,7 +188,7 @@ public class ConversationActivity extends ActionBarActivity {
 
 	}
 
-	public void unselectAll(View view) {
+	public void unselect(View view) {
 
 	}
 
@@ -123,10 +198,20 @@ public class ConversationActivity extends ActionBarActivity {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-
-		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.conversation, menu);
+		searchMenuItem = menu.findItem(R.id.search);
+		deleteMenuItem = menu.findItem(R.id.delete);
+		backMenuItem = menu.findItem(R.id.back);
 		return true;
+	}
+
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		boolean notEdit = isNotEdit(mode);
+		searchMenuItem.setVisible(notEdit);
+		deleteMenuItem.setVisible(notEdit);
+		backMenuItem.setVisible(!notEdit);
+		return super.onPrepareOptionsMenu(menu);
 	}
 
 	@Override
@@ -134,11 +219,55 @@ public class ConversationActivity extends ActionBarActivity {
 		// Handle action bar item clicks here. The action bar will
 		// automatically handle clicks on the Home/Up button, so long
 		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
+		switch (item.getItemId()) {
+		case R.id.search:
+			// TODO
+			break;
+		case R.id.delete:
+			onDelete();
+			break;
+		case R.id.back:
+			onBack();
+			break;
+		default:
+			break;
 		}
 		return super.onOptionsItemSelected(item);
 	}
 
+	private void onBack() {
+		setMode(DisplayMode.NOT_EDIT);
+	}
+
+	private void onDelete() {
+		setMode(DisplayMode.EDIT);
+	}
+
+	private void setMode(DisplayMode mode) {
+		this.mode = mode;
+		onModeChanged(mode);
+	}
+
+	private void onModeChanged(DisplayMode mode) {
+		boolean notEdit = isNotEdit(mode);
+		newMsgButton.setVisibility(notEdit ? View.VISIBLE : View.GONE);
+		selectOptionsLinearLayout.setVisibility(notEdit ? View.GONE : View.VISIBLE);
+		deleteButton.setVisibility(notEdit ? View.GONE : View.VISIBLE);
+	}
+
+	private boolean isNotEdit(DisplayMode mode) {
+		return mode == DisplayMode.NOT_EDIT;
+	}
+
+	private boolean isEdit(DisplayMode mode) {
+		return mode == DisplayMode.EDIT;
+	}
+
+	private void selectOrNot(String threadId) {
+		if (selectedThreadIds.contains(threadId)) {
+			selectedThreadIds.remove(threadId);
+		} else {
+			selectedThreadIds.add(threadId);
+		}
+	}
 }

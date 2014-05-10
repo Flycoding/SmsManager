@@ -4,9 +4,16 @@
     tools:context="com.flyingh.smsmanager.ConversationActivity" >
 
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/search"
         android:orderInCategory="100"
-        android:title="@string/action_settings"
-        app:showAsAction="never"/>
+        android:title="@string/search"/>
+    <item
+        android:id="@+id/delete"
+        android:orderInCategory="100"
+        android:title="@string/delete"/>
+    <item
+        android:id="@+id/back"
+        android:orderInCategory="100"
+        android:title="@string/back"/>
 
 </menu>
