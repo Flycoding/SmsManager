@@ -277,7 +277,8 @@ public class ConversationActivity extends Activity {
 			protected void onProgressUpdate(String... values) {
 				super.onProgressUpdate(values);
 				selectedThreadIds.remove(values[0]);
-				progressDialog.setProgress(progressDialog.getMax() - selectedThreadIds.size());
+				// progressDialog.setProgress(progressDialog.getMax() - selectedThreadIds.size());
+				progressDialog.incrementProgressBy(1);
 			}
 
 			@Override
