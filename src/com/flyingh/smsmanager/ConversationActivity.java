@@ -7,20 +7,21 @@ import java.util.Set;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.LoaderManager.LoaderCallbacks;
 import android.app.ProgressDialog;
-import android.content.AsyncQueryHandler;
 import android.content.Context;
+import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
+import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract.PhoneLookup;
-import android.provider.Telephony.Sms;
 import android.provider.Telephony.Sms.Conversations;
 import android.text.format.DateUtils;
 import android.view.KeyEvent;
@@ -125,10 +126,9 @@ public class ConversationActivity extends Activity {
 		TextView dateTextView;
 	}
 
-	@SuppressWarnings("deprecation")
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private CursorAdapter initAdapter() {
-		return adapter = new CursorAdapter(this, null, CursorAdapter.FLAG_AUTO_REQUERY) {
+		return adapter = new CursorAdapter(this, null, 0) {
 
 			@Override
 			public View newView(Context context, Cursor cursor, ViewGroup parent) {
@@ -193,14 +193,34 @@ public class ConversationActivity extends Activity {
 		selectOptionsLinearLayout = (LinearLayout) findViewById(R.id.layout_select_options);
 	}
 
-	@TargetApi(Build.VERSION_CODES.KITKAT)
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private void asyncQuery() {
-		new AsyncQueryHandler(getContentResolver()) {
+		getLoaderManager().initLoader(0, null, new LoaderCallbacks<Cursor>() {
+
+			@TargetApi(Build.VERSION_CODES.KITKAT)
 			@Override
-			protected void onQueryComplete(int token, Object cookie, android.database.Cursor cursor) {
-				adapter.changeCursor(cursor);
+			public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+				return new CursorLoader(ConversationActivity.this, Conversations.CONTENT_URI, PROJECTION, null, null,
+						Conversations.DEFAULT_SORT_ORDER);
 			}
-		}.startQuery(0, null, Sms.Conversations.CONTENT_URI, PROJECTION, null, null, " date DESC");
+
+			@Override
+			public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+				adapter.swapCursor(data);
+			}
+
+			@Override
+			public void onLoaderReset(Loader<Cursor> loader) {
+				adapter.swapCursor(null);
+			}
+
+		});
+		// new AsyncQueryHandler(getContentResolver()) {
+		// @Override
+		// protected void onQueryComplete(int token, Object cookie, android.database.Cursor cursor) {
+		// adapter.changeCursor(cursor);
+		// }
+		// }.startQuery(0, null, Sms.Conversations.CONTENT_URI, PROJECTION, null, null, " date DESC");
 	}
 
 	public void newMsg(View view) {
