@@ -125,9 +125,10 @@ public class ConversationActivity extends Activity {
 		TextView dateTextView;
 	}
 
+	@SuppressWarnings("deprecation")
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private CursorAdapter initAdapter() {
-		return adapter = new CursorAdapter(this, null, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER) {
+		return adapter = new CursorAdapter(this, null, CursorAdapter.FLAG_AUTO_REQUERY) {
 
 			@Override
 			public View newView(Context context, Cursor cursor, ViewGroup parent) {
@@ -287,7 +288,6 @@ public class ConversationActivity extends Activity {
 				Toast.makeText(ConversationActivity.this, "Delete success", Toast.LENGTH_SHORT).show();
 				progressDialog.dismiss();
 				setState(State.NOT_EDIT);
-				asyncQuery();
 			}
 
 			@Override
