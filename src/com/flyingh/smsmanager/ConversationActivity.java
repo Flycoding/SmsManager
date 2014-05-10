@@ -2,11 +2,15 @@ package com.flyingh.smsmanager;
 
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Set;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.AsyncQueryHandler;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -52,7 +56,9 @@ public class ConversationActivity extends Activity {
 	private Button newMsgButton;
 	private Button deleteButton;
 	private LinearLayout selectOptionsLinearLayout;
-	private final HashSet<String> selectedThreadIds = new HashSet<>();
+	private final Set<String> selectedThreadIds = new HashSet<>();
+	private Button selectAllButton;
+	private Button unselectButton;
 
 	enum DisplayMode {
 		NOT_EDIT, EDIT;
@@ -90,7 +96,7 @@ public class ConversationActivity extends Activity {
 
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				Cursor cursor = (Cursor) listView.getItemAtPosition(position);
+				Cursor cursor = (Cursor) adapter.getItem(position);
 				String threadId = cursor.getString(cursor.getColumnIndex(COLUMN_ID));
 				if (isEdit(mode)) {
 					CheckBox checkBox = (CheckBox) view.findViewById(R.id.checkbox);
@@ -174,6 +180,8 @@ public class ConversationActivity extends Activity {
 		listView = (ListView) findViewById(R.id.listView);
 		emptyConversationTextView = (TextView) findViewById(R.id.emptyConversation);
 		newMsgButton = (Button) findViewById(R.id.newMsgButton);
+		selectAllButton = (Button) findViewById(R.id.selectAllButton);
+		unselectButton = (Button) findViewById(R.id.unselectButton);
 		deleteButton = (Button) findViewById(R.id.deleteButton);
 		selectOptionsLinearLayout = (LinearLayout) findViewById(R.id.layout_select_options);
 	}
@@ -189,26 +197,46 @@ public class ConversationActivity extends Activity {
 	}
 
 	public void newMsg(View view) {
-
+		startActivity(new Intent(this, NewMessageActivity.class));
 	}
 
 	public void selectAll(View view) {
+		addAll(adapter.getCursor());
+	}
 
+	private void addAll(Cursor cursor) {
+		cursor.moveToPosition(-1);
+		while (cursor.moveToNext()) {
+			selectedThreadIds.add(cursor.getString(cursor.getColumnIndex(COLUMN_ID)));
+		}
+		onSelectedChanged();
+		adapter.notifyDataSetChanged();
 	}
 
 	public void unselect(View view) {
-
+		selectedThreadIds.clear();
+		onSelectedChanged();
+		adapter.notifyDataSetChanged();
 	}
 
 	public void delete(View view) {
+		new AlertDialog.Builder(this).setIcon(android.R.drawable.ic_dialog_alert).setTitle(R.string.confirm_to_delete_)
+				.setMessage(R.string.are_you_sure_to_delele_the_selected_conversations_)
+				.setPositiveButton(android.R.string.ok, new OnClickListener() {
 
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// TODO
+
+					}
+				}).setNegativeButton(android.R.string.cancel, null).show();
 	}
 
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		if (isEdit(mode)) {
 			if (KeyEvent.KEYCODE_BACK == event.getKeyCode()) {
-				setMode(DisplayMode.NOT_EDIT);
+				onBack();
 				return true;
 			}
 		}
@@ -261,6 +289,7 @@ public class ConversationActivity extends Activity {
 
 	private void onDelete() {
 		setMode(DisplayMode.EDIT);
+		onSelectedChanged();
 	}
 
 	private void setMode(DisplayMode mode) {
@@ -289,5 +318,12 @@ public class ConversationActivity extends Activity {
 		} else {
 			selectedThreadIds.add(threadId);
 		}
+		onSelectedChanged();
+	}
+
+	private void onSelectedChanged() {
+		selectAllButton.setEnabled(selectedThreadIds.size() != adapter.getCount());
+		unselectButton.setEnabled(!selectedThreadIds.isEmpty());
+		deleteButton.setEnabled(!selectedThreadIds.isEmpty());
 	}
 }
