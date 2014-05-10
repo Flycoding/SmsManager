@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.Telephony.Sms;
 import android.text.format.DateUtils;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -104,24 +105,28 @@ public class ConversationActivity extends Activity {
 		});
 	}
 
+	class ViewHolder {
+		CheckBox checkBox;
+		ImageView imageView;
+		TextView nameTextView;
+		TextView snippetTextView;
+		TextView dateTextView;
+	}
+
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private CursorAdapter initAdapter() {
 		return adapter = new CursorAdapter(this, null, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER) {
 
-			private CheckBox checkBox;
-			private ImageView imageView;
-			private TextView nameTextView;
-			private TextView snippetTextView;
-			private TextView dateTextView;
-
 			@Override
 			public View newView(Context context, Cursor cursor, ViewGroup parent) {
 				View view = LayoutInflater.from(context).inflate(R.layout.conversation_item, null);
-				checkBox = (CheckBox) view.findViewById(R.id.checkbox);
-				imageView = (ImageView) view.findViewById(R.id.imageView);
-				nameTextView = (TextView) view.findViewById(R.id.nameTextView);
-				snippetTextView = (TextView) view.findViewById(R.id.snippetTextView);
-				dateTextView = (TextView) view.findViewById(R.id.dateTextView);
+				ViewHolder viewHolder = new ViewHolder();
+				viewHolder.checkBox = (CheckBox) view.findViewById(R.id.checkbox);
+				viewHolder.imageView = (ImageView) view.findViewById(R.id.imageView);
+				viewHolder.nameTextView = (TextView) view.findViewById(R.id.nameTextView);
+				viewHolder.snippetTextView = (TextView) view.findViewById(R.id.snippetTextView);
+				viewHolder.dateTextView = (TextView) view.findViewById(R.id.dateTextView);
+				view.setTag(viewHolder);
 				return view;
 			}
 
@@ -130,11 +135,14 @@ public class ConversationActivity extends Activity {
 				if (cursor == null) {
 					return;
 				}
-				checkBox = (CheckBox) view.findViewById(R.id.checkbox);
-				imageView = (ImageView) view.findViewById(R.id.imageView);
-				nameTextView = (TextView) view.findViewById(R.id.nameTextView);
-				snippetTextView = (TextView) view.findViewById(R.id.snippetTextView);
-				dateTextView = (TextView) view.findViewById(R.id.dateTextView);
+
+				ViewHolder viewHolder = (ViewHolder) view.getTag();
+				CheckBox checkBox = viewHolder.checkBox;
+				ImageView imageView = viewHolder.imageView;
+				TextView nameTextView = viewHolder.nameTextView;
+				TextView snippetTextView = viewHolder.snippetTextView;
+				TextView dateTextView = viewHolder.dateTextView;
+
 				checkBox.setVisibility(isNotEdit(mode) ? View.GONE : View.VISIBLE);
 				String threadId = cursor.getString(cursor.getColumnIndex(COLUMN_ID));
 				checkBox.setChecked(selectedThreadIds.contains(threadId));
@@ -197,6 +205,17 @@ public class ConversationActivity extends Activity {
 	}
 
 	@Override
+	public boolean onKeyUp(int keyCode, KeyEvent event) {
+		if (isEdit(mode)) {
+			if (KeyEvent.KEYCODE_BACK == event.getKeyCode()) {
+				setMode(DisplayMode.NOT_EDIT);
+				return true;
+			}
+		}
+		return super.onKeyUp(keyCode, event);
+	}
+
+	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.conversation, menu);
 		searchMenuItem = menu.findItem(R.id.search);
@@ -237,6 +256,7 @@ public class ConversationActivity extends Activity {
 
 	private void onBack() {
 		setMode(DisplayMode.NOT_EDIT);
+		selectedThreadIds.clear();
 	}
 
 	private void onDelete() {
