@@ -7,17 +7,21 @@ import java.util.Set;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.AsyncQueryHandler;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.Telephony.Sms;
+import android.provider.Telephony.Sms.Conversations;
 import android.text.format.DateUtils;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -35,6 +39,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ConversationActivity extends Activity {
 
@@ -52,15 +57,16 @@ public class ConversationActivity extends Activity {
 	private MenuItem searchMenuItem;
 	private MenuItem deleteMenuItem;
 	private MenuItem backMenuItem;
-	private DisplayMode mode = DisplayMode.NOT_EDIT;// call setMode method to modify
+	private State state = State.NOT_EDIT;// call setMode method to modify
 	private Button newMsgButton;
 	private Button deleteButton;
 	private LinearLayout selectOptionsLinearLayout;
 	private final Set<String> selectedThreadIds = new HashSet<>();
 	private Button selectAllButton;
 	private Button unselectButton;
+	private ProgressDialog progressDialog;
 
-	enum DisplayMode {
+	enum State {
 		NOT_EDIT, EDIT;
 	}
 
@@ -86,7 +92,7 @@ public class ConversationActivity extends Activity {
 
 			@Override
 			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-				setMode(DisplayMode.EDIT);
+				setState(State.EDIT);
 				Cursor cursor = (Cursor) listView.getItemAtPosition(position);
 				selectOrNot(cursor.getString(cursor.getColumnIndex(COLUMN_ID)));
 				return true;
@@ -98,7 +104,7 @@ public class ConversationActivity extends Activity {
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				Cursor cursor = (Cursor) adapter.getItem(position);
 				String threadId = cursor.getString(cursor.getColumnIndex(COLUMN_ID));
-				if (isEdit(mode)) {
+				if (isEdit(state)) {
 					CheckBox checkBox = (CheckBox) view.findViewById(R.id.checkbox);
 					checkBox.setChecked(!selectedThreadIds.contains(threadId));
 					selectOrNot(threadId);
@@ -149,7 +155,7 @@ public class ConversationActivity extends Activity {
 				TextView snippetTextView = viewHolder.snippetTextView;
 				TextView dateTextView = viewHolder.dateTextView;
 
-				checkBox.setVisibility(isNotEdit(mode) ? View.GONE : View.VISIBLE);
+				checkBox.setVisibility(isNotEdit(state) ? View.GONE : View.VISIBLE);
 				String threadId = cursor.getString(cursor.getColumnIndex(COLUMN_ID));
 				checkBox.setChecked(selectedThreadIds.contains(threadId));
 
@@ -223,18 +229,86 @@ public class ConversationActivity extends Activity {
 		new AlertDialog.Builder(this).setIcon(android.R.drawable.ic_dialog_alert).setTitle(R.string.confirm_to_delete_)
 				.setMessage(R.string.are_you_sure_to_delele_the_selected_conversations_)
 				.setPositiveButton(android.R.string.ok, new OnClickListener() {
-
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						// TODO
-
+						doDelete();
 					}
 				}).setNegativeButton(android.R.string.cancel, null).show();
 	}
 
+	private void doDelete() {
+		new AsyncTask<String, String, Void>() {
+			@Override
+			protected void onPreExecute() {
+				super.onPreExecute();
+				progressDialog = new ProgressDialog(ConversationActivity.this);
+				progressDialog.setIcon(android.R.drawable.ic_dialog_alert);
+				progressDialog.setTitle(R.string.progress);
+				progressDialog.setMessage(getString(R.string.deleting));
+				progressDialog.setMax(selectedThreadIds.size());
+				progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+				progressDialog.setIndeterminate(false);
+				progressDialog.setCancelable(true);
+				progressDialog.setOnCancelListener(new OnCancelListener() {
+
+					@Override
+					public void onCancel(DialogInterface dialog) {
+						cancel(false);
+						progressDialog.dismiss();
+					}
+				});
+				progressDialog.show();
+			}
+
+			@TargetApi(Build.VERSION_CODES.KITKAT)
+			@Override
+			protected Void doInBackground(String... threadIds) {
+				for (String threadId : threadIds) {
+					if (isCancelled()) {
+						break;
+					}
+					getContentResolver().delete(Uri.withAppendedPath(Conversations.CONTENT_URI, threadId), null, null);
+					publishProgress(threadId);
+				}
+				return null;
+			}
+
+			@Override
+			protected void onProgressUpdate(String... values) {
+				super.onProgressUpdate(values);
+				selectedThreadIds.remove(values[0]);
+				progressDialog.setProgress(progressDialog.getMax() - selectedThreadIds.size());
+			}
+
+			@Override
+			protected void onPostExecute(Void result) {
+				super.onPostExecute(result);
+				Toast.makeText(ConversationActivity.this, "Delete success", Toast.LENGTH_SHORT).show();
+				progressDialog.dismiss();
+				setState(State.NOT_EDIT);
+				asyncQuery();
+			}
+
+			@Override
+			protected void onCancelled() {
+				super.onCancelled();
+				progressDialog.dismiss();
+			}
+		}.execute(selectedThreadIds.toArray(new String[selectedThreadIds.size()]));
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		if (progressDialog != null) {
+			progressDialog.dismiss();
+			progressDialog = null;
+		}
+	}
+
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		if (isEdit(mode)) {
+		if (isEdit(state)) {
 			if (KeyEvent.KEYCODE_BACK == event.getKeyCode()) {
 				onBack();
 				return true;
@@ -254,7 +328,7 @@ public class ConversationActivity extends Activity {
 
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
-		boolean notEdit = isNotEdit(mode);
+		boolean notEdit = isNotEdit(state);
 		searchMenuItem.setVisible(notEdit);
 		deleteMenuItem.setVisible(notEdit);
 		backMenuItem.setVisible(!notEdit);
@@ -283,33 +357,33 @@ public class ConversationActivity extends Activity {
 	}
 
 	private void onBack() {
-		setMode(DisplayMode.NOT_EDIT);
+		setState(State.NOT_EDIT);
 		selectedThreadIds.clear();
 	}
 
 	private void onDelete() {
-		setMode(DisplayMode.EDIT);
+		setState(State.EDIT);
 		onSelectedChanged();
 	}
 
-	private void setMode(DisplayMode mode) {
-		this.mode = mode;
-		onModeChanged(mode);
+	private void setState(State state) {
+		this.state = state;
+		onStateChanged(state);
 	}
 
-	private void onModeChanged(DisplayMode mode) {
-		boolean notEdit = isNotEdit(mode);
+	private void onStateChanged(State state) {
+		boolean notEdit = isNotEdit(state);
 		newMsgButton.setVisibility(notEdit ? View.VISIBLE : View.GONE);
 		selectOptionsLinearLayout.setVisibility(notEdit ? View.GONE : View.VISIBLE);
 		deleteButton.setVisibility(notEdit ? View.GONE : View.VISIBLE);
 	}
 
-	private boolean isNotEdit(DisplayMode mode) {
-		return mode == DisplayMode.NOT_EDIT;
+	private boolean isNotEdit(State state) {
+		return state == State.NOT_EDIT;
 	}
 
-	private boolean isEdit(DisplayMode mode) {
-		return mode == DisplayMode.EDIT;
+	private boolean isEdit(State state) {
+		return state == State.EDIT;
 	}
 
 	private void selectOrNot(String threadId) {
