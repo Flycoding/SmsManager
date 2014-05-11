@@ -17,6 +17,7 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -148,6 +149,8 @@ public class ConversationActivity extends Activity {
 				if (cursor == null) {
 					return;
 				}
+
+				view.setBackgroundColor(cursor.getPosition() % 2 == 0 ? Color.YELLOW : Color.GREEN);
 
 				ViewHolder viewHolder = (ViewHolder) view.getTag();
 				CheckBox checkBox = viewHolder.checkBox;
