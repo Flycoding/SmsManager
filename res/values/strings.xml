@@ -26,5 +26,11 @@
     <string name="deleting">Deleting</string>
     <string name="send">Send</string>
     <string name="please_input_the_message">please input the message</string>
+    <string name="address">Address</string>
+    <string name="body">Body</string>
+    <string name="input_phone_number">input phone number</string>
+    <string name="input_message">input message</string>
+    <string name="send_success">send success</string>
+    <string name="phone_number_and_message_should_not_be_empty">phone number and message should not be empty</string>
 
 </resources>
