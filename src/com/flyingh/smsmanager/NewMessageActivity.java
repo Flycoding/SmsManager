@@ -1,6 +1,7 @@
 package com.flyingh.smsmanager;
 
 import java.util.ArrayList;
+
 import android.annotation.TargetApi;
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -25,7 +26,7 @@ import android.widget.Toast;
 public class NewMessageActivity extends ActionBarActivity {
 
 	private static final String[] PROJECTION = new String[] { Contacts._ID, Contacts.DISPLAY_NAME, Phone.NUMBER };
-	private static final Uri SENT_CONTENT_URI = Uri.parse("content://mms/sent");
+	private static final Uri SENT_CONTENT_URI = Uri.parse("content://sms/sent");
 	private static final String COLUMN_BODY = "body";
 	private static final String COLUMN_ADDRESS = "address";
 	private AutoCompleteTextView addressAutoCompleteTextView;

@@ -2,6 +2,7 @@ package com.flyingh.smsmanager;
 
 import android.annotation.TargetApi;
 import android.app.ListActivity;
+import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
@@ -14,11 +15,16 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 
 public class FolderActivity extends ListActivity {
+	public static final String EXTRA_TITLE = "title";
+	public static final String EXTRA_URI = "uri";
 	private static final Uri WATCH_FOR_CHANGES_URI = Uri.parse("content://mms-sms/conversations/");
 	private static final int[] iconIds = { R.drawable.inbox, R.drawable.outbox, R.drawable.sent, R.drawable.draft };
 	private static final int[] boxNameIds = { R.string.inbox, R.string.outbox, R.string.sent, R.string.draft };
@@ -35,6 +41,17 @@ public class FolderActivity extends ListActivity {
 		initAdapter();
 		initObserver();
 		setListAdapter(adapter);
+		ListView listView = getListView();
+		listView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				Intent intent = new Intent(FolderActivity.this, FolderDetailActivity.class);
+				intent.putExtra(EXTRA_URI, uris[position]);
+				intent.putExtra(EXTRA_TITLE, boxNameIds[position]);
+				startActivity(intent);
+			}
+		});
 	}
 
 	@Override

@@ -36,5 +36,6 @@
     <string name="outbox">Outbox</string>
     <string name="sent">Sent</string>
     <string name="draft">Draft</string>
+    <string name="title_activity_folder_detail">FolderDetailActivity</string>
 
 </resources>
