@@ -24,5 +24,7 @@
     <string name="are_you_sure_to_delele_the_selected_conversations_">Are you sure to delele the selected conversations?</string>
     <string name="progress">Progress</string>
     <string name="deleting">Deleting</string>
+    <string name="send">Send</string>
+    <string name="please_input_the_message">please input the message</string>
 
 </resources>

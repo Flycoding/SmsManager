@@ -45,7 +45,10 @@ import android.widget.Toast;
 
 public class ConversationActivity extends Activity {
 
-	private static final String EXTRA_THREAD_ID = "thread_id";
+	public static final String EXTRA_ADDRESS = "extra_address";
+	public static final String EXTRA_NAME_WITH_MSG_COUNT = "extra_name_with_msg_count";
+	public static final String EXTRA_IMAGE_RES_ID = "extra_image_res_id";
+	public static final String EXTRA_THREAD_ID = "thread_id";
 	private static final int SNIPPET_MAX_LENGTH = 10;
 	private static final String[] PROJECTION = new String[] { "sms.thread_id as _id,sms.address as address,groups.msg_count as msg_count,sms.body as snippet,sms.date as date" };
 	private static final String COLUMN_ID = "_id";
@@ -113,9 +116,14 @@ public class ConversationActivity extends Activity {
 				} else {
 					Intent intent = new Intent(ConversationActivity.this, ConversationDetailActivity.class);
 					intent.putExtra(EXTRA_THREAD_ID, threadId);
+					ViewHolder tag = (ViewHolder) view.getTag();
+					intent.putExtra(EXTRA_IMAGE_RES_ID, (int) tag.imageView.getTag());
+					intent.putExtra(EXTRA_NAME_WITH_MSG_COUNT, tag.nameTextView.getText().toString());
+					intent.putExtra(EXTRA_ADDRESS, cursor.getString(cursor.getColumnIndex(COLUMN_ADDRESS)));
 					startActivity(intent);
 				}
 			}
+
 		});
 	}
 
@@ -167,7 +175,9 @@ public class ConversationActivity extends Activity {
 				Cursor nameCursor = getContentResolver().query(Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, address),
 						new String[] { PhoneLookup.DISPLAY_NAME }, null, null, null);
 				boolean flag = nameCursor != null && nameCursor.moveToFirst();
-				imageView.setImageResource(flag ? R.drawable.ic_contact_picture : R.drawable.ic_unknown_picture_normal);
+				int resId = flag ? R.drawable.ic_contact_picture : R.drawable.ic_unknown_picture_normal;
+				imageView.setImageResource(resId);
+				imageView.setTag(resId);
 				nameTextView.setText(flag ? nameCursor.getString(nameCursor.getColumnIndex(PhoneLookup.DISPLAY_NAME)) : address);
 				int msgCount = cursor.getInt(cursor.getColumnIndex(COLUMN_MSG_COUNT));
 				if (msgCount > 1) {
