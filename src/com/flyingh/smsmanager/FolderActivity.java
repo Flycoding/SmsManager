@@ -2,11 +2,13 @@ package com.flyingh.smsmanager;
 
 import android.annotation.TargetApi;
 import android.app.ListActivity;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,23 +16,48 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.TextView;
 
 public class FolderActivity extends ListActivity {
+	private static final Uri WATCH_FOR_CHANGES_URI = Uri.parse("content://mms-sms/conversations/");
 	private static final int[] iconIds = { R.drawable.inbox, R.drawable.outbox, R.drawable.sent, R.drawable.draft };
 	private static final int[] boxNameIds = { R.string.inbox, R.string.outbox, R.string.sent, R.string.draft };
-	private static final Uri[] uris = { Uri.parse("content://sms/inbox"), Uri.parse("content://sms/outbox"), Uri.parse("content://mms/sent"),
-			Uri.parse("content://mms/drafts") };
+	private static final Uri[] uris = { Uri.parse("content://sms/inbox"), Uri.parse("content://sms/outbox"), Uri.parse("content://sms/sent"),
+			Uri.parse("content://sms/drafts") };
 	// private static final Uri[] uris = { Inbox.CONTENT_URI, Outbox.CONTENT_URI, Sent.CONTENT_URI, Draft.CONTENT_URI };
-	private ListAdapter adapter;
+	private BaseAdapter adapter;
+	private ContentObserver observer;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_folder);
 		initAdapter();
+		initObserver();
 		setListAdapter(adapter);
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		getContentResolver().registerContentObserver(WATCH_FOR_CHANGES_URI, true, observer);
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		getContentResolver().unregisterContentObserver(observer);
+	}
+
+	private void initObserver() {
+		observer = new ContentObserver(new Handler()) {
+			@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+			@Override
+			public void onChange(boolean selfChange) {
+				super.onChange(selfChange);
+				adapter.notifyDataSetChanged();
+			}
+		};
 	}
 
 	public void newMsg(View view) {
@@ -43,10 +70,7 @@ public class FolderActivity extends ListActivity {
 
 			@Override
 			public View getView(int position, View convertView, ViewGroup parent) {
-				if (convertView != null) {
-					return convertView;
-				}
-				View view = LayoutInflater.from(FolderActivity.this).inflate(R.layout.folder_item, null);
+				View view = convertView != null ? convertView : LayoutInflater.from(FolderActivity.this).inflate(R.layout.folder_item, null);
 				ImageView iconImageView = (ImageView) view.findViewById(R.id.icon);
 				TextView boxTextView = (TextView) view.findViewById(R.id.box);
 				final TextView countTextView = (TextView) view.findViewById(R.id.count);
