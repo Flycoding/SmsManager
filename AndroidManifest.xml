@@ -51,6 +51,10 @@
             android:name="com.flyingh.smsmanager.FolderDetailActivity"
             android:label="@string/title_activity_folder_detail" >
         </activity>
+        <activity
+            android:name="com.flyingh.smsmanager.SmsDetailActivity"
+            android:label="@string/title_activity_sms_detail" >
+        </activity>
     </application>
 
 </manifest>

@@ -6,6 +6,7 @@ import android.annotation.TargetApi;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.content.Context;
 import android.content.CursorLoader;
+import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -21,6 +22,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CursorAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -28,6 +31,7 @@ import android.widget.TextView;
 
 public class FolderDetailActivity extends ActionBarActivity {
 
+	public static final String EXTRA_ID = "extra_id";
 	private static final String COLUMN_ADDRESS = "address";
 	private static final String COLUMN_BODY = "body";
 	private static final String COLUMN_DATE = "date";
@@ -44,6 +48,16 @@ public class FolderDetailActivity extends ActionBarActivity {
 		initAdapter();
 		listView.setAdapter(adapter);
 		asyncQuery();
+		listView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				Intent intent = new Intent(FolderDetailActivity.this, SmsDetailActivity.class);
+				Cursor cursor = (Cursor) adapter.getItem(position);
+				intent.putExtra(EXTRA_ID, cursor.getInt(cursor.getColumnIndex(Sms._ID)));
+				startActivity(intent);
+			}
+		});
 	}
 
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
