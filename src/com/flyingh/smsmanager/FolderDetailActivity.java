@@ -83,6 +83,7 @@ public class FolderDetailActivity extends ActionBarActivity {
 	}
 
 	class FolderItemViewHolder {
+		TextView dateGroupTextView;
 		ImageView imageView;
 		TextView nameTextView;
 		TextView bodyTextView;
@@ -97,11 +98,13 @@ public class FolderDetailActivity extends ActionBarActivity {
 			private TextView nameTextView;
 			private TextView dateTextView;
 			private TextView bodyTextView;
+			private TextView dateGroupTextView;
 
 			@Override
 			public View newView(Context context, Cursor cursor, ViewGroup parent) {
 				View view = LayoutInflater.from(context).inflate(R.layout.folder_detail_item, null);
 				FolderItemViewHolder folderItemViewHolder = new FolderItemViewHolder();
+				folderItemViewHolder.dateGroupTextView = (TextView) view.findViewById(R.id.dateGroup);
 				folderItemViewHolder.imageView = (ImageView) view.findViewById(R.id.imageView);
 				folderItemViewHolder.nameTextView = (TextView) view.findViewById(R.id.nameTextView);
 				folderItemViewHolder.bodyTextView = (TextView) view.findViewById(R.id.bodyTextView);
@@ -113,6 +116,7 @@ public class FolderDetailActivity extends ActionBarActivity {
 			@Override
 			public void bindView(View view, Context context, Cursor cursor) {
 				FolderItemViewHolder folderItemViewHolder = (FolderItemViewHolder) view.getTag();
+				dateGroupTextView = folderItemViewHolder.dateGroupTextView;
 				imageView = folderItemViewHolder.imageView;
 				nameTextView = folderItemViewHolder.nameTextView;
 				bodyTextView = folderItemViewHolder.bodyTextView;
@@ -129,6 +133,21 @@ public class FolderDetailActivity extends ActionBarActivity {
 				bodyTextView.setText(body);
 				bodyTextView.setBackgroundColor(getBodyColor());
 				dateTextView.setText(String.format(DateUtils.isToday(dateMillis) ? "%1$tT" : "%1$tF %1$tT", new Date(dateMillis)));
+				String date = String.format("%tF", new Date(dateMillis));
+				if (cursor.moveToPrevious()) {
+					long previousDateMillis = cursor.getLong(cursor.getColumnIndex(COLUMN_DATE));
+					String previousDate = String.format("%tF", new Date(previousDateMillis));
+					if (date.equals(previousDate)) {
+						dateGroupTextView.setVisibility(View.GONE);
+					} else {
+						dateGroupTextView.setVisibility(View.VISIBLE);
+						dateGroupTextView.setText(date);
+					}
+					cursor.moveToNext();
+				} else {
+					dateGroupTextView.setVisibility(View.VISIBLE);
+					dateGroupTextView.setText(date);
+				}
 			}
 
 			private int getBodyColor() {
