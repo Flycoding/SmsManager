@@ -1,24 +1,91 @@
 package com.flyingh.smsmanager;
 
+import android.annotation.TargetApi;
+import android.app.ListActivity;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.ListAdapter;
+import android.widget.TextView;
 
-public class FolderActivity extends ActionBarActivity {
+public class FolderActivity extends ListActivity {
+	private static final int[] iconIds = { R.drawable.inbox, R.drawable.outbox, R.drawable.sent, R.drawable.draft };
+	private static final int[] boxNameIds = { R.string.inbox, R.string.outbox, R.string.sent, R.string.draft };
+	private static final Uri[] uris = { Uri.parse("content://sms/inbox"), Uri.parse("content://sms/outbox"), Uri.parse("content://mms/sent"),
+			Uri.parse("content://mms/drafts") };
+	// private static final Uri[] uris = { Inbox.CONTENT_URI, Outbox.CONTENT_URI, Sent.CONTENT_URI, Draft.CONTENT_URI };
+	private ListAdapter adapter;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_folder);
+		initAdapter();
+		setListAdapter(adapter);
+	}
 
-		if (savedInstanceState == null) {
-			getSupportFragmentManager().beginTransaction().add(R.id.container, new PlaceholderFragment()).commit();
-		}
+	public void newMsg(View view) {
+		// TODO
+	}
+
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	private void initAdapter() {
+		adapter = new BaseAdapter() {
+
+			@Override
+			public View getView(int position, View convertView, ViewGroup parent) {
+				if (convertView != null) {
+					return convertView;
+				}
+				View view = LayoutInflater.from(FolderActivity.this).inflate(R.layout.folder_item, null);
+				ImageView iconImageView = (ImageView) view.findViewById(R.id.icon);
+				TextView boxTextView = (TextView) view.findViewById(R.id.box);
+				final TextView countTextView = (TextView) view.findViewById(R.id.count);
+				iconImageView.setImageResource(iconIds[position]);
+				boxTextView.setText(boxNameIds[position]);
+				new AsyncTask<Uri, Void, Integer>() {
+
+					@Override
+					protected Integer doInBackground(Uri... params) {
+						Cursor cursor = getContentResolver().query(params[0], new String[] { "count(*)" }, null, null, null);
+						if (cursor != null && cursor.moveToFirst()) {
+							return cursor.getInt(0);
+						}
+						return 0;
+					}
+
+					@Override
+					protected void onPostExecute(Integer result) {
+						countTextView.setText(result > 0 ? String.valueOf(result) : null);
+					}
+				}.execute(uris[position]);
+				return view;
+			}
+
+			@Override
+			public int getCount() {
+				return iconIds.length;
+			}
+
+			@Override
+			public Object getItem(int position) {
+				return null;
+			}
+
+			@Override
+			public long getItemId(int position) {
+				return position;
+			}
+		};
 	}
 
 	@Override
@@ -39,21 +106,6 @@ public class FolderActivity extends ActionBarActivity {
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
-	}
-
-	/**
-	 * A placeholder fragment containing a simple view.
-	 */
-	public static class PlaceholderFragment extends Fragment {
-
-		public PlaceholderFragment() {
-		}
-
-		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-			View rootView = inflater.inflate(R.layout.fragment_folder, container, false);
-			return rootView;
-		}
 	}
 
 }

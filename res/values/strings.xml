@@ -32,5 +32,9 @@
     <string name="input_message">input message</string>
     <string name="send_success">send success</string>
     <string name="phone_number_and_message_should_not_be_empty">phone number and message should not be empty</string>
+    <string name="inbox">Inbox</string>
+    <string name="outbox">Outbox</string>
+    <string name="sent">Sent</string>
+    <string name="draft">Draft</string>
 
 </resources>
